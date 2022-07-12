@@ -153,8 +153,9 @@ class Villard:
             execution_node["executed"] = False
 
             def check_ref_recursively(kwargs):
-                # if "ref" key is detected, it means that the node refers to another node.
-                # Add the referenced node into the dependency list (`prevs`) of the current node.
+                # if value starts with REFERENCE_PREFIX, key is detected. It means that
+                # the node refers to another node. Add the referenced node into the
+                # dependency list (`prevs`) of the current node.
                 for k, v in kwargs.items():
                     if isinstance(v, str):
                         if v.startswith(REFERENCE_PREFIX):

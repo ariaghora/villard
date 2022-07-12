@@ -36,6 +36,9 @@ class Villard:
             k: v for k, v in zip(cls.supported_data_types, cls.supported_data_writer)
         }
 
+        cls.execution_nodes_in_out_counter = dict()
+        cls.execution_nodes = dict()
+
         return cls.instance
 
     def visit_and_execute_recursively(cls, name, node, stats_table):
@@ -108,14 +111,12 @@ class Villard:
                 exit(1)
 
         """ To keep track nodes' incoming and outgoing edge counts """
-        execution_nodes_in_out_counter = dict()
         for name in cls.pipeline_definition:
-            execution_nodes_in_out_counter[name] = dict()
-            execution_nodes_in_out_counter[name]["in"] = 0
-            execution_nodes_in_out_counter[name]["out"] = 0
+            cls.execution_nodes_in_out_counter[name] = dict()
+            cls.execution_nodes_in_out_counter[name]["in"] = 0
+            cls.execution_nodes_in_out_counter[name]["out"] = 0
 
         """ Build execution graph """
-        execution_nodes = dict()
         for name, kwargs in cls.pipeline_definition.items():
             execution_node = dict()
             execution_node["func"] = cls.node_func_map[name]
@@ -129,25 +130,25 @@ class Villard:
                 for k, v in kwargs.items():
                     if k == "ref":
                         execution_node["prevs"].append(v)
-                        execution_nodes_in_out_counter[name]["in"] += 1
-                        execution_nodes_in_out_counter[v]["out"] += 1
+                        cls.execution_nodes_in_out_counter[name]["in"] += 1
+                        cls.execution_nodes_in_out_counter[v]["out"] += 1
                     elif isinstance(v, dict):
                         check_ref_recursively(v)
 
             check_ref_recursively(kwargs)
-            execution_nodes[name] = execution_node
+            cls.execution_nodes[name] = execution_node
 
         """ Output nodes are the ones that have no outging edges """
         output_nodes = {
             node: v
-            for node, v in execution_nodes.items()
-            if execution_nodes_in_out_counter[node]["out"] == 0
+            for node, v in cls.execution_nodes.items()
+            if cls.execution_nodes_in_out_counter[node]["out"] == 0
         }
 
         stats_table = []
         for output_node_name in output_nodes:
             cls.visit_and_execute_recursively(
-                output_node_name, execution_nodes[output_node_name], stats_table
+                output_node_name, cls.execution_nodes[output_node_name], stats_table
             )
 
         print(

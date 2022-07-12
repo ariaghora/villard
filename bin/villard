@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+import sys
+import os
+
+from villard import V
+
+USAGE = """Usage: villard <command> [<args>]
+
+The following commands are available:
+    run       Run a villard pipeline
+"""
+
+CONFIG_TEMPLATE = """
+
+# This is where we list the modules that contain the implementations of the nodes.
+# The modules must be importable. They can be placed in subdirectories. Remember
+# to add __init__.py files to the subdirectories.
+node_implementation_modules:
+  - nodes
+
+data_catalog:
+  local_iris:
+    path: 01_raw/iris.csv
+
+pipeline_definition:
+  preprocess_data:
+    data: "data::local_iris"
+""".strip()
+
+
+class CMDTool:
+    def __init__(self):
+        try:
+            cmd = sys.argv[1]
+            if cmd == "run":
+                try:
+                    config_file = sys.argv[2]
+                except IndexError:
+                    config_file = "config.yaml"
+                    print(
+                        "No config file specified. Using default config file: config.yaml"
+                    )
+
+                self.run(config_file)
+            elif cmd == "create":
+                try:
+                    project_name = sys.argv[2]
+                except IndexError:
+                    project_name = "my_project"
+                    print(
+                        "No project name specified. Using default project name: my_project"
+                    )
+                self.create(project_name)
+            else:
+                print(USAGE)
+        except IndexError:
+            print(USAGE)
+
+    def run(self, config_file):
+        V.run(config_file)
+
+    def create(self, project_name):
+        # create folder
+        if not os.path.exists(project_name):
+            os.makedirs(project_name)
+        else:
+            print(f"Directory with name {project_name} already exists.")
+            sys.exit(1)
+
+        # create an empty config file
+        with open(f"{project_name}/config.yaml", "w") as f:
+            f.write(CONFIG_TEMPLATE)
+
+
+if __name__ == "__main__":
+    CMDTool()

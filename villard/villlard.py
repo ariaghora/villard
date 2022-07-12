@@ -129,6 +129,9 @@ class Villard:
         if "data_catalog" in config:
             cls.data_catalog = config["data_catalog"]
 
+        # import the modules containing the definition of each node.
+        # The definitions will be referred by the matching ones in the
+        # configuration.
         for module in cls.node_definition_modules:
             try:
                 sys.path.append(os.getcwd())

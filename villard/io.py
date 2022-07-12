@@ -4,6 +4,11 @@ import pandas as pd
 from termcolor import colored
 
 
+"""===================
+Writer classes
+==================="""
+
+
 class DataWriter:
     def write_data(self, path: str, data: object, *args, **kwargs):
         dirname = os.path.dirname(path)
@@ -22,6 +27,11 @@ class PandasWriter(DataWriter):
     def write_data(self, path: str, data: object, *args, **kwargs):
         super().write_data(path, data)
         data.to_csv(path, *args, **kwargs)
+
+
+"""===================
+Reader classes
+==================="""
 
 
 class DataReader:
@@ -43,17 +53,3 @@ class PandasReader(DataReader):
     def read_data(self, path: str, *args, **kwargs):
         super().read_data(path, *args, **kwargs)
         return pd.read_csv(path, *args, **kwargs)
-
-
-class DataReaderByType(DataReader):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def read_data(self, data_type: str, path: str, *args, **kwargs):
-        super().read_data(path, *args, **kwargs)
-        if data_type == "DT_PICKLE":
-            return PickleReader().read_data(path, *args, **kwargs)
-        elif data_type == "DT_PANDAS_DATAFRAME":
-            return PandasReader().read_data(path, *args, **kwargs)
-        else:
-            raise ValueError("Unknown data type: {}".format(data_type))

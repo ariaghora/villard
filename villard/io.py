@@ -1,8 +1,8 @@
 import os
 import pickle
+
 import pandas as pd
 from termcolor import colored
-
 
 """===================
 Writer classes

@@ -11,7 +11,6 @@ from termcolor import colored
 
 from .io import *
 
-
 REFERENCE_PREFIX = "ref::"
 DATA_CATALOG_PREFIX = "data::"
 

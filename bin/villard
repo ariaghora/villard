@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-import sys
 import os
+import sys
+from argparse import ArgumentParser
+from distutils.command.config import config
 
 from pyrsistent import optional
-
 from villard import V
 
-USAGE = """Usage: villard <command> [<args>]
+USAGE = """villard <command> [<args>]
 
 The following commands are available:
     run       Run a villard pipeline
@@ -32,42 +33,36 @@ pipeline_definition:
 
 class CMDTool:
     def __init__(self):
-        try:
-            cmd = sys.argv[1]
-            if cmd == "run":
-                try:
-                    config_file = sys.argv[2]
-                except IndexError:
-                    config_file = "config.yaml"
-                    print(
-                        "No config file specified. Using default config file: config.yaml"
-                    )
-
-                optional_args = sys.argv[3:]
-                self.run(config_file, optional_args)
-            elif cmd == "create":
-                try:
-                    project_name = sys.argv[2]
-                except IndexError:
-                    project_name = "my_project"
-                    print(
-                        "No project name specified. Using default project name: my_project"
-                    )
-                self.create(project_name)
-            else:
-                print(USAGE)
-        except IndexError:
+        if len(sys.argv) < 2:
             print(USAGE)
+            exit(1)
 
-    def run(self, config_file, optional_args):
-        pipeline_name = None
-        if "-p" in optional_args:
-            pipeline_name = optional_args[optional_args.index("-p") + 1]
-            if not pipeline_name:
-                print("No pipeline name specified.")
-                exit(1)
-        else:
-            pipeline_name = "_default"
+        cmd = sys.argv[1]
+        if cmd == "run":
+            parser = ArgumentParser(usage=USAGE)
+            parser.add_argument("config_path", help="Path to the config file")
+            parser.add_argument(
+                "-p",
+                "--pipeline-name",
+                help="Name of the pipeline to run",
+                default="_default",
+            )
+            args = parser.parse_args(sys.argv[2:])
+
+            config_file = args.config_path
+            pipeline_name = args.pipeline_name
+
+            self.run(config_file, pipeline_name)
+        elif cmd == "create":
+            parser = ArgumentParser(usage=USAGE)
+            parser.add_argument("project_name", help="Name of the project to create")
+            args = parser.parse_args(sys.argv[2:])
+
+            project_name = args.project_name
+            self.create(project_name)
+
+    def run(self, config_file, pipeline_name):
+        if pipeline_name == "_default":
             print(
                 f"No pipeline name specified. Using default pipeline name: {pipeline_name}"
             )

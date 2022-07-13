@@ -16,15 +16,9 @@ A tiny layer to organize your data science project
 </p>
 
 ## About 
-Villard manages your machine learning projects' pipelines.
-Split a big chunk of file into modular files you the project is much easier to maintain.
-Embed pipelines into your existing code without too many changes.
+Villard manages your machine learning project pipelines.
+Split a big project into smaller discrete steps, and Villard will help you to manage them.
 
-## Usage
-
-```python
-# TODO: write some useful stuff
-```
 
 ## Installation
     pip install git+https://github.com/ariaghora/villard

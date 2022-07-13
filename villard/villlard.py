@@ -115,13 +115,14 @@ class Villard:
                 prev, cls.execution_nodes[prev], stats_table
             )
 
-        # This kwargs is based on the definition in the config file.
-        # So, some values might be not the actual values (e.g., reference to
-        # catalog's data or other node's output). We need to convert them to
-        # the actual values accordingly.
+        # The dependent nodes are already executed, so we can execute the current node.
+        # We will use kwargs to pass the data for function execution.
         kwargs = node["kwargs"]
 
-        # Convert kwargs ref to actual values before execution
+        # The `kwargs` above is based on the definition in the config file.
+        # Consequently, some values might be not the actual values (e.g.,
+        # reference to catalog's data or reference to other node's output).
+        # We need to convert them to the actual values accordingly.
         actual_kwargs = kwargs
         for k, v in actual_kwargs.items():
             if isinstance(v, str):

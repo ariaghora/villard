@@ -16,8 +16,8 @@ A tiny layer to organize your data science project
 </p>
 
 ## About 
-Villard manages your machine learning project pipelines.
-Split a big project into smaller discrete steps, and Villard will help you to manage them.
+Villard manages your data science pipelines.
+Split a big project into smaller discrete steps for a maintainable and reproducible workflow.
 
 ## Usage example
 
@@ -47,15 +47,16 @@ node_implementation_modules:
     - "pipeline"
 
 pipeline_definition:
-    preprocess_data:
-        data: "data::iris_data"
-        train_size: 0.8
-    train_model:
-        data: "ref::preprocess_data"
-        kernel: "rbf"
-    evaluate_model:
-        data: "ref::preprocess_data"
-        model: "ref::train_model"
+    _default:
+        preprocess_data:
+            data: "data::iris_data"
+            train_size: 0.8
+        train_model:
+            data: "ref::preprocess_data"
+            kernel: "rbf"
+        evaluate_model:
+            data: "ref::preprocess_data"
+            model: "ref::train_model"
 ```
 
 In `pipeline.py` file:

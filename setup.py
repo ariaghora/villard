@@ -19,7 +19,7 @@ setup(
     author_email="hello@ghora.net",
     description="A tiny layer to organize your data science project",
     license="MIT",
-    packages=["villard"],
+    packages=["villard", "villard.explorer"],
     scripts=["bin/villard"],
     cmdclass={"install": PostInstallCommand},
 )

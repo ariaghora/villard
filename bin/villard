@@ -2,10 +2,9 @@
 import os
 import sys
 from argparse import ArgumentParser
-from distutils.command.config import config
 
-from pyrsistent import optional
-from villard import V
+from villard import V, ConfigLoader
+from villard.explorer.app import Explorer
 
 USAGE = """villard <command> [<args>]
 
@@ -64,6 +63,13 @@ class CMDTool:
 
             project_name = args.project_name
             self.create(project_name)
+        elif cmd == "explore":
+            parser = ArgumentParser(usage=USAGE)
+            parser.add_argument("config_path", help="Path to the config file")
+            args = parser.parse_args(sys.argv[2:])
+
+            config_file = args.config_path
+            self.explore(config_file)
 
     def run(self, config_file, pipeline_name, run_name):
         if pipeline_name == "_default":
@@ -84,6 +90,12 @@ class CMDTool:
         # create an empty config file
         with open(f"{project_name}/config.yaml", "w") as f:
             f.write(CONFIG_TEMPLATE)
+
+    def explore(self, config_file):
+        config = ConfigLoader(config_file).load_config()
+        experiment_output_dir = config.get("experiment_output_dir")
+        explorer = Explorer(experiment_output_dir, "0.0.0.0", 8000)
+        explorer.serve()
 
 
 if __name__ == "__main__":

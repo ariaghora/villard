@@ -1,3 +1,3 @@
-from .villlard import Villard
+from .villlard import Villard, ConfigLoader
 
 V = Villard()

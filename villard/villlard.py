@@ -304,6 +304,8 @@ class Villard:
                 output_node_name, cls.execution_nodes[output_node_name], stats_table
             )
 
+        cls.track_default_config(config, pipeline_name)
+
         # Write experiment result to file
         cls.experiment_tracker.commit()
 
@@ -316,6 +318,14 @@ class Villard:
                 tablefmt="fancy_grid",
             )
         )
+
+    def track_default_config(cls, config: Dict, pipeline_name: str) -> None:
+        cls.track("pipeline_name", pipeline_name)
+        for key, value in config["pipeline_definition"][pipeline_name].items():
+            for node_param, node_arg in value.items():
+                _type = type(node_arg)
+                if _type in (int, float, str):
+                    cls.track(f"{key}.{node_param}", node_arg)
 
     def read_data(cls, data_catalog_key: str) -> Any:
         """

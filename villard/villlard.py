@@ -3,7 +3,6 @@ import json
 import os
 import sys
 from datetime import datetime
-from distutils.command.config import config
 from typing import Any, Dict, List
 
 import _jsonnet
@@ -36,7 +35,7 @@ class ConfigLoader:
 
         self.config_file_ext = os.path.splitext(config_path)[1]
         if self.config_file_ext not in self.type_loader_map:
-            msg = f"Config file type `{self.config_file_ext}` is not supported."
+            msg = f"Config file type of `{self.config_file_ext}` is not supported."
             print(colored("Error:", "red"), colored(msg, "red"))
             exit(1)
 
@@ -71,9 +70,10 @@ class Villard:
         cls.data_catalog = dict()
         cls.node_func_map = dict()
         cls.node_output_map = dict()
-        cls.execution_nodes_in_out_counter = dict()
         cls.execution_nodes = dict()
+        cls.execution_nodes_in_out_counter = dict()
 
+        # Default supported data types and their corresponding loaders and writers.
         cls.supported_data_types = ["DT_PICKLE", "DT_PANDAS_DATAFRAME"]
         cls.supported_data_writers = [PickleWriter, PandasWriter]
         cls.supported_data_readers = [PickleReader, PandasReader]
@@ -251,7 +251,7 @@ class Villard:
             cls.data_catalog = config["data_catalog"]
 
         # import the modules containing the definition of each node.
-        # The definitions will be referred by the matching ones in the
+        # The definitions will be referred by the ones with matching key in the
         # configuration.
         for module in cls.node_implementation_modules:
             try:
@@ -265,7 +265,8 @@ class Villard:
         # Build execution graph that determines the order of execution
         cls._build_execution_graph()
 
-        # Collect output nodes: the ones that have no outging edges
+        # Collect output nodes: the ones that have no outging edges.
+        # The recursion will start the from output nodes.
         output_nodes = {
             node: v
             for node, v in cls.execution_nodes.items()
@@ -277,6 +278,7 @@ class Villard:
         stats_table = []
         stats_table_headers = ["Node", "Dependencies", "Execution Time"]
 
+        # Execute the graph in topological order.
         for output_node_name in output_nodes:
             cls._visit_and_execute_recursively(
                 output_node_name, cls.execution_nodes[output_node_name], stats_table

@@ -30,16 +30,16 @@ class Villard:
         cls.execution_nodes = dict()
 
         cls.supported_data_types = ["DT_PICKLE", "DT_PANDAS_DATAFRAME"]
-        cls.supported_data_writer = [PickleWriter, PandasWriter]
-        cls.supported_data_reader = [PickleReader, PandasReader]
+        cls.supported_data_writers = [PickleWriter, PandasWriter]
+        cls.supported_data_readers = [PickleReader, PandasReader]
 
         # Following dictionaries are to map catalog's data type string to the
         # suitable writer/reader.
         cls.type_to_reader_map = {
-            k: v for k, v in zip(cls.supported_data_types, cls.supported_data_reader)
+            k: v for k, v in zip(cls.supported_data_types, cls.supported_data_readers)
         }
         cls.type_to_writer_map = {
-            k: v for k, v in zip(cls.supported_data_types, cls.supported_data_writer)
+            k: v for k, v in zip(cls.supported_data_types, cls.supported_data_writers)
         }
 
         return cls.instance

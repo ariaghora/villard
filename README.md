@@ -19,9 +19,13 @@ A tiny layer to organize your data science project
 Villard manages your data science pipelines.
 Split a big project into smaller discrete steps for a maintainable and reproducible workflow.
 
+### What would you would expect from Villard:
+- An experiment pipeline management framework
+- An experiment tracker and explorer
+
 ## Usage example
 
-Suppose we have following structure:
+Suppose we have the following structure:
 
 ```
 project_root/

@@ -70,21 +70,23 @@ class Villard:
                     data_catalog_key = v.lstrip(DATA_CATALOG_PREFIX).strip()
                     actual_kwargs[k] = cls.read_data(data_catalog_key=data_catalog_key)
 
+        # ---------------------- ACTUAL EXECUTION ----------------------
         # The actual kwargs is ready, call node function accordingly.
-        # Keep track the execution statistics.
+        # Keep track current run's statistics.
         print(colored(f"  Executing `{name}`...", "yellow"))
         tic = datetime.now()
         node["func"](**actual_kwargs)
         node["executed"] = True
         toc = datetime.now()
         print(colored(f"⦿ Completed `{name}`", "green"))
+        # --------------------------------------------------------------
 
         execution_time = toc - tic
         dependencies = node["prevs"]
 
         stats_table.append((name, dependencies, execution_time))
 
-    def _get_data_info(cls, data_catalog_key) -> Dict:
+    def _get_catalog_data_info(cls, data_catalog_key) -> Dict:
         try:
             data_info = cls.data_catalog[data_catalog_key]
         except KeyError:
@@ -94,7 +96,9 @@ class Villard:
 
         return data_info
 
-    def _get_data_type(cls, data_info: Dict[str, Any], data_catalog_key: str) -> str:
+    def _get_catalog_data_type(
+        cls, data_info: Dict[str, Any], data_catalog_key: str
+    ) -> str:
         try:
             data_type = data_info["type"]
         except KeyError:
@@ -110,6 +114,8 @@ class Villard:
         return data_type
 
     def node(cls, name: str):
+        """This decorator registers a python function as a node."""
+
         def decorator_node(func):
             def inner(*args, **kwargs):
                 result = func(*args, **kwargs)
@@ -121,6 +127,7 @@ class Villard:
         return decorator_node
 
     def run(cls, config: str):
+        """Execute a single run"""
         colorama.init()
 
         # Load configurations to initialize pipeline definitions and node implementation
@@ -203,8 +210,8 @@ class Villard:
         )
 
     def read_data(cls, data_catalog_key: str):
-        data_info = cls._get_data_info(data_catalog_key)
-        data_type = cls._get_data_type(data_info, data_catalog_key)
+        data_info = cls._get_catalog_data_info(data_catalog_key)
+        data_type = cls._get_catalog_data_type(data_info, data_catalog_key)
 
         # Try to get read parameters
         try:
@@ -216,8 +223,8 @@ class Villard:
         return reader.read_data(data_info["path"], **kwargs)
 
     def write_data(cls, data_catalog_key: str, data: object):
-        data_info = cls._get_data_info(data_catalog_key)
-        data_type = cls._get_data_type(data_info, data_catalog_key)
+        data_info = cls._get_catalog_data_info(data_catalog_key)
+        data_type = cls._get_catalog_data_type(data_info, data_catalog_key)
 
         # Try to get write parameters
         try:

@@ -50,7 +50,6 @@ class Explorer:
                 exp_result = joblib.load(
                     os.path.join(self.root_dir, _dir, "experiment.pkl")
                 )
-                print(exp_result)
                 item = {
                     "run_name": _dir,
                     **exp_result,

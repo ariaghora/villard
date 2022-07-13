@@ -10,6 +10,8 @@ USAGE = """villard <command> [<args>]
 
 The following commands are available:
     run       Run a villard pipeline
+    create    Create a new project
+    explore   Explore experiment runs
 """
 
 CONFIG_TEMPLATE = """

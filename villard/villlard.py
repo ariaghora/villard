@@ -42,9 +42,24 @@ class Villard:
             k: v for k, v in zip(cls.supported_data_types, cls.supported_data_writers)
         }
 
+        # For terminal output coloring
+        colorama.init()
+
         return cls.instance
 
     def _visit_and_execute_recursively(cls, name: str, node, stats_table: List) -> None:
+        """Traverse the execution graph recursively and execute the nodes.
+
+        Args:
+            name: Name of the node.
+            node: A dict representing an "execution node".
+            stats_table: A list of lists to store the execution stats.
+
+            Returns:
+                None
+
+        """
+
         if node["executed"]:
             return
 
@@ -55,8 +70,14 @@ class Villard:
                 prev, cls.execution_nodes[prev], stats_table
             )
 
+        # This kwargs is based on the definition in the config file.
+        # So, some values might be not the actual values (e.g., reference to
+        # catalog's data or other node's output). We need to convert them to
+        # the actual values accordingly.
+        kwargs = node["kwargs"]
+
         # Convert kwargs ref to actual values before execution
-        actual_kwargs = node["kwargs"]
+        actual_kwargs = kwargs
         for k, v in actual_kwargs.items():
             if isinstance(v, str):
                 # When referencing output of another node
@@ -127,8 +148,19 @@ class Villard:
         return decorator_node
 
     def run(cls, config: str):
-        """Execute a single run"""
-        colorama.init()
+        """
+        Execute a single experiment run. Each run result will be stored in a predefined
+        location.
+
+        The flow of execution is based on a directed graph. Each node is a python function.
+        Each node has a list of dependencies. The dependencies are the names of the nodes that
+        are executed before the current node. The graph is traversed in topological order.
+        The graph structure is defined based on config's `pipeline_definition`.
+
+        Args:
+            config: Path to the config file.
+
+        """
 
         # Load configurations to initialize pipeline definitions and node implementation
         # modules
@@ -160,11 +192,12 @@ class Villard:
 
         # Build execution graph
         for name, kwargs in cls.pipeline_definition.items():
-            execution_node = dict()
-            execution_node["func"] = cls.node_func_map[name]
-            execution_node["kwargs"] = kwargs
-            execution_node["prevs"] = []
-            execution_node["executed"] = False
+            execution_node = {
+                "func": cls.node_func_map[name],
+                "kwargs": kwargs,
+                "prevs": [],
+                "executed": False,
+            }
 
             def check_ref_recursively(kwargs):
                 # if value starts with REFERENCE_PREFIX, key is detected. It means that
@@ -200,6 +233,7 @@ class Villard:
                 output_node_name, cls.execution_nodes[output_node_name], stats_table
             )
 
+        # Print the execution statistics
         print(
             "\n"
             + tabulate(
@@ -209,20 +243,43 @@ class Villard:
             )
         )
 
-    def read_data(cls, data_catalog_key: str):
+    def read_data(cls, data_catalog_key: str) -> Any:
+        """
+        Read data based on the data catalog.
+
+        Args:
+            data_catalog_key: There key referencing a data in the data catalog.
+
+        Returns:
+            The data. It's type depends on the defined data type in the catalog.
+        """
         data_info = cls._get_catalog_data_info(data_catalog_key)
         data_type = cls._get_catalog_data_type(data_info, data_catalog_key)
+        data_path = data_info["path"]
 
-        # Try to get read parameters
+        # Try to get read parameters. If not defined, use empty dict as the
+        # default value.
         try:
             kwargs = data_info["read_params"]
         except KeyError:
             kwargs = dict()
+
+        # The data reader class is determined by the data type.
         ReaderClass = cls.type_to_reader_map[data_type]
         reader = ReaderClass()
-        return reader.read_data(data_info["path"], **kwargs)
+        data = reader.read_data(data_path, **kwargs)
 
-    def write_data(cls, data_catalog_key: str, data: object):
+        return data
+
+    def write_data(cls, data_catalog_key: str, data: object) -> None:
+        """
+        Write data based on the data catalog.
+
+        Args:
+            data_catalog_key: There key referencing a data in the data catalog.
+            data: The data to be written.
+
+        """
         data_info = cls._get_catalog_data_info(data_catalog_key)
         data_type = cls._get_catalog_data_type(data_info, data_catalog_key)
 

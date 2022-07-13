@@ -1,9 +1,12 @@
 import importlib
+import json
 import os
 import sys
 from datetime import datetime
+from distutils.command.config import config
 from typing import Any, Dict, List
 
+import _jsonnet
 import colorama
 import yaml
 from tabulate import tabulate
@@ -15,6 +18,48 @@ from .io import *
 # to another node's output or to one of data in catalog.
 REFERENCE_PREFIX = "ref::"
 DATA_CATALOG_PREFIX = "data::"
+
+
+class ConfigLoader:
+    def __init__(self, config_path: str):
+        if not os.path.exists(config_path):
+            msg = f"Config path `{config_path}` does not exist."
+            print(colored("Error:", "red"), colored(msg, "red"))
+            exit(1)
+        self.config_path = config_path
+
+        self.type_loader_map = {
+            ".yaml": self._load_yaml,
+            ".json": self._load_json,
+            ".jsonnet": self._load_jsonnet,
+        }
+
+        self.config_file_ext = os.path.splitext(config_path)[1]
+        if self.config_file_ext not in self.type_loader_map:
+            msg = f"Config file type `{self.config_file_ext}` is not supported."
+            print(colored("Error:", "red"), colored(msg, "red"))
+            exit(1)
+
+    def load_config(self) -> Dict[str, Any]:
+        loader_func = self.type_loader_map[self.config_file_ext]
+        config = loader_func()
+        return config
+
+    def _load_yaml(self) -> Dict[str, Any]:
+        with open(self.config_path, "r") as f:
+            config = yaml.load(f, Loader=yaml.FullLoader)
+        return config
+
+    def _load_json(self) -> Dict[str, Any]:
+        with open(self.config_path, "r") as f:
+            config = json.load(f)
+        return config
+
+    def _load_jsonnet(self) -> Dict[str, Any]:
+        with open(self.config_path, "r") as f:
+            json_str = _jsonnet.evaluate_file(self.config_path)
+            config = json.loads(json_str)
+        return config
 
 
 class Villard:
@@ -147,7 +192,7 @@ class Villard:
 
         return decorator_node
 
-    def run(cls, config: str):
+    def run(cls, config_path: str):
         """
         Execute a single experiment run. Each run result will be stored in a predefined
         location.
@@ -164,10 +209,9 @@ class Villard:
 
         # Load configurations to initialize pipeline definitions and node implementation
         # modules
-        with open(config, "r") as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-            cls.pipeline_definition = config["pipeline_definition"]
-            cls.node_implementation_modules = config["node_implementation_modules"]
+        config = ConfigLoader(config_path).load_config()
+        cls.pipeline_definition = config["pipeline_definition"]
+        cls.node_implementation_modules = config["node_implementation_modules"]
 
         if "data_catalog" in config:
             cls.data_catalog = config["data_catalog"]

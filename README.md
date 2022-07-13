@@ -2,13 +2,13 @@
     <img src="assets/logo.png" width=350>
 </p>
 
----
-
 <p align="center" >
 <strong>
 A tiny layer to organize your data science project
 </strong>
 </p>
+
+---
 
 <p align="center" >
 <img src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54">
@@ -19,6 +19,89 @@ A tiny layer to organize your data science project
 Villard manages your machine learning project pipelines.
 Split a big project into smaller discrete steps, and Villard will help you to manage them.
 
+## Usage example
+
+Suppose we have following structure:
+
+```
+project_root/
+    - config.yaml
+    - pipeline.py
+    - data/
+        - input/ 
+            - iris.csv
+```
+
+In `config.yaml` file:
+
+```yaml
+data_catalog:
+    iris_data:
+        path: "data/input/iris.csv"  # assumed you have it
+        type: "DT_PANDAS_DATAFRAME"
+    trained_model:
+        path: "data/output/trained_model.pkl"
+        type: "DT_PICKLE"
+
+node_implementation_modules:
+    - "pipeline"
+
+pipeline_definition:
+    preprocess_data:
+        data: "data::iris_data"
+        train_size: 0.8
+    train_model:
+        data: "ref::preprocess_data"
+        kernel: "rbf"
+    evaluate_model:
+        data: "ref::preprocess_data"
+        model: "ref::train_model"
+```
+
+In `pipeline.py` file:
+
+```python
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+from villard import V
+
+@V.node("preprocess_data")
+def preprocess(data, train_size):
+    X = data.drop("class", axis=1)
+    y = data["class"]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, train_size=train_size
+    )
+    return X_train, X_test, y_train, y_test
+
+
+@V.node("train_model")
+def train_model(data, kernel):
+    # our usual training procedure
+    X_train, _, y_train, _ = data
+    clf = SVC(kernel=kernel)
+    clf.fit(X_train, y_train)
+
+    # Writer helper, to save the model according to
+    # the specification of "trained_model" in the data 
+    # catalog
+    V.write_data("trained_model", clf)
+    return clf
+
+
+@V.node("evaluate_model")
+def evaluate_model(data, model):
+    _, X_test, _, y_test = data
+    y_pred = model.predict(X_test)
+    accuracy = model.score(X_test, y_test)
+    return accuracy
+```
+
+Then run following command:
+
+```bash
+$ villard run config.yaml
+```
 
 ## Installation
     pip install git+https://github.com/ariaghora/villard

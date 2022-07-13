@@ -119,7 +119,7 @@ class Villard:
 
         # The dependent nodes are already executed, so we can execute the current node.
         # We will use kwargs to pass the data for function execution.
-        kwargs = node["kwargs"]
+        kwargs = node["kwargs"].copy()
 
         # The `kwargs` above is based on the definition in the config file.
         # Consequently, some values might be not the actual values (e.g.,
@@ -324,8 +324,7 @@ class Villard:
         for key, value in config["pipeline_definition"][pipeline_name].items():
             for node_param, node_arg in value.items():
                 _type = type(node_arg)
-                if _type in (int, float, str):
-                    cls.track(f"{key}.{node_param}", node_arg)
+                cls.track(f"{key}.{node_param}", node_arg)
 
     def read_data(cls, data_catalog_key: str) -> Any:
         """

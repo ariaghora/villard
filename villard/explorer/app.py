@@ -59,7 +59,7 @@ class Explorer:
             t = jinja2.Template(TEMPLATE)
             html_table = pd.DataFrame(items)
             html_table = html_table.to_html(
-                index=False, classes="table table-striped table-sm", border=0
+                index=False, classes="table table-striped table-bordered table-sm", border=0
             )
             return render_template(t, html_table=html_table)
 

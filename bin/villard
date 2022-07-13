@@ -47,12 +47,16 @@ class CMDTool:
                 help="Name of the pipeline to run",
                 default="_default",
             )
+            parser.add_argument(
+                "-n", "--run-name", help="Name of the current run", default=None
+            )
             args = parser.parse_args(sys.argv[2:])
 
             config_file = args.config_path
             pipeline_name = args.pipeline_name
+            run_name = args.run_name
 
-            self.run(config_file, pipeline_name)
+            self.run(config_file, pipeline_name, run_name)
         elif cmd == "create":
             parser = ArgumentParser(usage=USAGE)
             parser.add_argument("project_name", help="Name of the project to create")
@@ -61,13 +65,13 @@ class CMDTool:
             project_name = args.project_name
             self.create(project_name)
 
-    def run(self, config_file, pipeline_name):
+    def run(self, config_file, pipeline_name, run_name):
         if pipeline_name == "_default":
             print(
                 f"No pipeline name specified. Using default pipeline name: {pipeline_name}"
             )
 
-        V.run(config_file, pipeline_name)
+        V.run(config_file, pipeline_name, run_name)
 
     def create(self, project_name):
         # create folder

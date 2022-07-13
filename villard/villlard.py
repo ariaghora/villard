@@ -12,6 +12,7 @@ from tabulate import tabulate
 from termcolor import colored
 
 from .io import *
+from .tracker import ExperimentTracker
 
 # Following prefixes are used to identify if the value is a reference
 # to another node's output or to one of data in catalog.
@@ -72,6 +73,7 @@ class Villard:
         cls.node_output_map = dict()
         cls.execution_nodes = dict()
         cls.execution_nodes_in_out_counter = dict()
+        cls.experiment_tracker: ExperimentTracker = None
 
         # Default supported data types and their corresponding loaders and writers.
         cls.supported_data_types = ["DT_PICKLE", "DT_PANDAS_DATAFRAME"]
@@ -226,7 +228,7 @@ class Villard:
 
         return decorator_node
 
-    def run(cls, config_path: str, pipeline_name: str) -> None:
+    def run(cls, config_path: str, pipeline_name: str, run_name: str) -> None:
         """
         Execute a single experiment run. Each run result will be stored in a predefined
         location.
@@ -256,6 +258,13 @@ class Villard:
         # Initialize pipeline and node implementations
         cls.pipeline_definition = pipeline_definitions[pipeline_name]
         cls.node_implementation_modules = config["node_implementation_modules"]
+
+        # Initialize experiment tracker
+        try:
+            experiment_output_dir = config["experiment_output_dir"]
+        except:
+            experiment_output_dir = None
+        cls.experiment_tracker = ExperimentTracker(run_name, experiment_output_dir)
 
         # Initialize data catalog if it is defined in the config file.
         if "data_catalog" in config:
@@ -294,6 +303,9 @@ class Villard:
             cls._visit_and_execute_recursively(
                 output_node_name, cls.execution_nodes[output_node_name], stats_table
             )
+
+        # Write experiment result to file
+        cls.experiment_tracker.commit()
 
         # Print the execution statistics
         print(
@@ -353,3 +365,14 @@ class Villard:
         WriterClass = cls.type_to_writer_map[data_type]
         writer = WriterClass()
         writer.write_data(data_info["path"], data, **kwargs)
+
+    def track(cls, key: str, value: Any) -> None:
+        """
+        Track a value. This value will be stored in the experiment's tracking
+        dictionary.
+
+        Args:
+            key: The key of the value.
+            value: The value to be tracked.
+        """
+        cls.experiment_tracker.track(key, value)

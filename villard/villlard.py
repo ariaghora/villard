@@ -2,7 +2,7 @@ import importlib
 import os
 import sys
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import colorama
 import yaml
@@ -11,6 +11,8 @@ from termcolor import colored
 
 from .io import *
 
+# Following prefixes are used to identify if the value is a reference
+# to another node's output or to one of data in catalog.
 REFERENCE_PREFIX = "ref::"
 DATA_CATALOG_PREFIX = "data::"
 
@@ -24,11 +26,15 @@ class Villard:
         cls.data_catalog = dict()
         cls.node_func_map = dict()
         cls.node_output_map = dict()
+        cls.execution_nodes_in_out_counter = dict()
+        cls.execution_nodes = dict()
 
         cls.supported_data_types = ["DT_PICKLE", "DT_PANDAS_DATAFRAME"]
         cls.supported_data_writer = [PickleWriter, PandasWriter]
         cls.supported_data_reader = [PickleReader, PandasReader]
 
+        # Following dictionaries are to map catalog's data type string to the
+        # suitable writer/reader.
         cls.type_to_reader_map = {
             k: v for k, v in zip(cls.supported_data_types, cls.supported_data_reader)
         }
@@ -36,12 +42,9 @@ class Villard:
             k: v for k, v in zip(cls.supported_data_types, cls.supported_data_writer)
         }
 
-        cls.execution_nodes_in_out_counter = dict()
-        cls.execution_nodes = dict()
-
         return cls.instance
 
-    def _visit_and_execute_recursively(cls, name, node, stats_table):
+    def _visit_and_execute_recursively(cls, name: str, node, stats_table: List) -> None:
         if node["executed"]:
             return
 
@@ -81,7 +84,7 @@ class Villard:
 
         stats_table.append((name, dependencies, execution_time))
 
-    def _get_data_info(cls, data_catalog_key):
+    def _get_data_info(cls, data_catalog_key) -> Dict:
         try:
             data_info = cls.data_catalog[data_catalog_key]
         except KeyError:
@@ -91,7 +94,7 @@ class Villard:
 
         return data_info
 
-    def _get_data_type(cls, data_info: Dict[str, Any], data_catalog_key: str):
+    def _get_data_type(cls, data_info: Dict[str, Any], data_catalog_key: str) -> str:
         try:
             data_type = data_info["type"]
         except KeyError:
@@ -120,10 +123,12 @@ class Villard:
     def run(cls, config: str):
         colorama.init()
 
+        # Load configurations to initialize pipeline definitions and node implementation
+        # modules
         with open(config, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
             cls.pipeline_definition = config["pipeline_definition"]
-            cls.node_definition_modules = config["node_implementation_modules"]
+            cls.node_implementation_modules = config["node_implementation_modules"]
 
         if "data_catalog" in config:
             cls.data_catalog = config["data_catalog"]
@@ -131,7 +136,7 @@ class Villard:
         # import the modules containing the definition of each node.
         # The definitions will be referred by the matching ones in the
         # configuration.
-        for module in cls.node_definition_modules:
+        for module in cls.node_implementation_modules:
             try:
                 sys.path.append(os.getcwd())
                 importlib.import_module(module)

@@ -102,7 +102,7 @@ def evaluate_model(data, model):
     return accuracy
 ```
 
-Then run following command:
+Then run the following command:
 
 ```bash
 $ villard run config.yaml

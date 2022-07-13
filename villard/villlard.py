@@ -180,6 +180,39 @@ class Villard:
 
         return data_type
 
+    def _build_execution_graph(cls) -> None:
+        # To keep track nodes' incoming and outgoing edge counts.
+        # Initialized with 0.
+        for name in cls.pipeline_definition:
+            cls.execution_nodes_in_out_counter[name] = dict()
+            cls.execution_nodes_in_out_counter[name]["in"] = 0
+            cls.execution_nodes_in_out_counter[name]["out"] = 0
+
+        for name, kwargs in cls.pipeline_definition.items():
+            execution_node = {
+                "func": cls.node_func_map[name],
+                "kwargs": kwargs,
+                "prevs": [],
+                "executed": False,
+            }
+
+            def check_ref_recursively(kwargs):
+                # if value starts with REFERENCE_PREFIX, key is detected. It means that
+                # the node refers to another node. Add the referenced node into the
+                # dependency list (`prevs`) of the current node.
+                for k, v in kwargs.items():
+                    if isinstance(v, str):
+                        if v.startswith(REFERENCE_PREFIX):
+                            prev_name = v.lstrip(REFERENCE_PREFIX)
+                            execution_node["prevs"].append(prev_name)
+                            cls.execution_nodes_in_out_counter[name]["in"] += 1
+                            cls.execution_nodes_in_out_counter[prev_name]["out"] += 1
+                    elif isinstance(v, dict):
+                        check_ref_recursively(v)
+
+            check_ref_recursively(kwargs)
+            cls.execution_nodes[name] = execution_node
+
     def node(cls, name: str):
         """This decorator registers a python function as a node."""
 
@@ -229,37 +262,8 @@ class Villard:
                 print(colored("Error:", "red"), colored(msg, "red"))
                 exit(1)
 
-        # To keep track nodes' incoming and outgoing edge counts
-        for name in cls.pipeline_definition:
-            cls.execution_nodes_in_out_counter[name] = dict()
-            cls.execution_nodes_in_out_counter[name]["in"] = 0
-            cls.execution_nodes_in_out_counter[name]["out"] = 0
-
-        # Build execution graph
-        for name, kwargs in cls.pipeline_definition.items():
-            execution_node = {
-                "func": cls.node_func_map[name],
-                "kwargs": kwargs,
-                "prevs": [],
-                "executed": False,
-            }
-
-            def check_ref_recursively(kwargs):
-                # if value starts with REFERENCE_PREFIX, key is detected. It means that
-                # the node refers to another node. Add the referenced node into the
-                # dependency list (`prevs`) of the current node.
-                for k, v in kwargs.items():
-                    if isinstance(v, str):
-                        if v.startswith(REFERENCE_PREFIX):
-                            prev_name = v.lstrip(REFERENCE_PREFIX)
-                            execution_node["prevs"].append(prev_name)
-                            cls.execution_nodes_in_out_counter[name]["in"] += 1
-                            cls.execution_nodes_in_out_counter[prev_name]["out"] += 1
-                    elif isinstance(v, dict):
-                        check_ref_recursively(v)
-
-            check_ref_recursively(kwargs)
-            cls.execution_nodes[name] = execution_node
+        # Build execution graph that determines the order of execution
+        cls._build_execution_graph()
 
         # Collect output nodes: the ones that have no outging edges
         output_nodes = {

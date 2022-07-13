@@ -12,7 +12,7 @@ Writer classes
 class DataWriter:
     def write_data(self, path: str, data: object, *args, **kwargs) -> None:
         dirname = os.path.dirname(path)
-        if not os.path.exists(dirname):
+        if (not os.path.exists(dirname)) and (dirname != ""):
             os.makedirs(dirname)
 
 

@@ -3,7 +3,7 @@ import json
 import os
 import sys
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import _jsonnet
 import colorama
@@ -129,12 +129,12 @@ class Villard:
                 # When referencing output of another node
                 if v.startswith(REFERENCE_PREFIX):
                     actual_kwargs[k] = cls.node_output_map[
-                        v.lstrip(REFERENCE_PREFIX).strip()
+                        v.replace(REFERENCE_PREFIX, "").strip()
                     ]
 
                 # When referencing data from the data catalog
-                if v.startswith(DATA_CATALOG_PREFIX):
-                    data_catalog_key = v.lstrip(DATA_CATALOG_PREFIX).strip()
+                elif v.startswith(DATA_CATALOG_PREFIX):
+                    data_catalog_key = v.replace(DATA_CATALOG_PREFIX, "").strip()
                     actual_kwargs[k] = cls.read_data(data_catalog_key=data_catalog_key)
 
         # ---------------------- ACTUAL EXECUTION ----------------------
@@ -226,7 +226,7 @@ class Villard:
 
         return decorator_node
 
-    def run(cls, config_path: str):
+    def run(cls, config_path: str, pipeline_name: str) -> None:
         """
         Execute a single experiment run. Each run result will be stored in a predefined
         location.
@@ -244,9 +244,20 @@ class Villard:
         # Load configurations to initialize pipeline definitions and node implementation
         # modules
         config = ConfigLoader(config_path).load_config()
-        cls.pipeline_definition = config["pipeline_definition"]
+        pipeline_definitions = config["pipeline_definition"]
+
+        # Check if the pipeline definition is defined in the config file.
+        if not pipeline_name in pipeline_definitions:
+            msg = f"Pipeline `{pipeline_name}` is not defined in config file.\n"
+            msg += f"Available pipelines: {list(config['pipeline_definition'].keys())}"
+            print(colored("Error:", "red"), colored(msg, "red"))
+            exit(1)
+
+        # Initialize pipeline and node implementations
+        cls.pipeline_definition = pipeline_definitions[pipeline_name]
         cls.node_implementation_modules = config["node_implementation_modules"]
 
+        # Initialize data catalog if it is defined in the config file.
         if "data_catalog" in config:
             cls.data_catalog = config["data_catalog"]
 

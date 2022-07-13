@@ -2,6 +2,8 @@
 import sys
 import os
 
+from pyrsistent import optional
+
 from villard import V
 
 USAGE = """Usage: villard <command> [<args>]
@@ -41,7 +43,8 @@ class CMDTool:
                         "No config file specified. Using default config file: config.yaml"
                     )
 
-                self.run(config_file)
+                optional_args = sys.argv[3:]
+                self.run(config_file, optional_args)
             elif cmd == "create":
                 try:
                     project_name = sys.argv[2]
@@ -56,8 +59,20 @@ class CMDTool:
         except IndexError:
             print(USAGE)
 
-    def run(self, config_file):
-        V.run(config_file)
+    def run(self, config_file, optional_args):
+        pipeline_name = None
+        if "-p" in optional_args:
+            pipeline_name = optional_args[optional_args.index("-p") + 1]
+            if not pipeline_name:
+                print("No pipeline name specified.")
+                exit(1)
+        else:
+            pipeline_name = "_default"
+            print(
+                f"No pipeline name specified. Using default pipeline name: {pipeline_name}"
+            )
+
+        V.run(config_file, pipeline_name)
 
     def create(self, project_name):
         # create folder

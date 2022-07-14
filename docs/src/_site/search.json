@@ -1,5 +1,12 @@
 [
   {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Villard",
+    "section": "",
+    "text": "Maybe you will like this. Villard manages your data science pipelines. Split a big project into smaller discrete steps for a maintainable and reproducible workflow. Perhaps you don’t even need to your existing code too much."
+  },
+  {
     "objectID": "installation.html",
     "href": "installation.html",
     "title": "Installation",

@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 
 import _jsonnet
 import colorama
+from git import Object
 import yaml
 from tabulate import tabulate
 from termcolor import colored
@@ -18,6 +19,7 @@ from .tracker import ExperimentTracker
 # to another node's output or to one of data in catalog.
 REFERENCE_PREFIX = "ref::"
 DATA_CATALOG_PREFIX = "data::"
+OBJECT_REGISTRY_PREFIX = "obj::"
 
 
 class ConfigLoader:
@@ -69,6 +71,7 @@ class Villard:
             cls.instance = super(Villard, cls).__new__(cls)
 
         cls.data_catalog = dict()
+        cls.object_registry = dict()
         cls.node_func_map = dict()
         cls.node_output_map = dict()
         cls.execution_nodes = dict()
@@ -138,6 +141,11 @@ class Villard:
                 elif v.startswith(DATA_CATALOG_PREFIX):
                     data_catalog_key = v.replace(DATA_CATALOG_PREFIX, "").strip()
                     actual_kwargs[k] = cls.read_data(data_catalog_key=data_catalog_key)
+
+                # When referencing object from the object registry
+                elif v.startswith(OBJECT_REGISTRY_PREFIX):
+                    object_registry_key = v.replace(OBJECT_REGISTRY_PREFIX, "").strip()
+                    actual_kwargs[k] = cls.object_registry[object_registry_key]
 
         # ---------------------- ACTUAL EXECUTION ----------------------
         # The actual kwargs is ready, call node function accordingly.
@@ -321,10 +329,7 @@ class Villard:
 
     def track_default_config(cls, config: Dict, pipeline_name: str) -> None:
         cls.track("pipeline_name", pipeline_name)
-        for key, value in config["pipeline_definition"][pipeline_name].items():
-            for node_param, node_arg in value.items():
-                _type = type(node_arg)
-                cls.track(f"{key}.{node_param}", node_arg)
+        cls.track("run_timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     def read_data(cls, data_catalog_key: str) -> Any:
         """
@@ -385,3 +390,6 @@ class Villard:
             value: The value to be tracked.
         """
         cls.experiment_tracker.track(key, value)
+
+    def register(cls, key: str, value: Object) -> None:
+        cls.object_registry[key] = value

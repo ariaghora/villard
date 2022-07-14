@@ -1,0 +1,5 @@
+---
+title: "Installation"
+---
+
+`pip install git+https://github.com/ariaghora/villard`

@@ -1,0 +1,72 @@
+---
+title: "Getting started"
+---
+
+# Basic concepts
+
+## Step
+Your data science experiment consists of many steps.
+For example, data loading step, data preprocessing step, model training step, model evaluation step, and so on.
+In Villard, an experiment is a collection of steps.
+Each step is a function that takes some parameters and returns a result.
+The parameters can be some user-defined data, or the result from other steps.
+Interconnected shapes resemble a directed graph, and we call it a _pipeline_.
+
+## Run
+A run is the execution of all the steps in pipeline, from the beginning to the end.
+
+Consider following example:
+
+```{mermaid}
+flowchart LR
+  load_data --> preprocess_data;
+  preprocess_data --> train_model;
+  train_model --> evaluate_model;
+  preprocess_data --> evaluate_model;
+```
+Each box represents a step.
+The arrows represent the dependencies between steps.
+A single run of the example pipeline would be the execution starting from `load_data` to `evaluate_model`.
+
+
+# Hello world pipeline
+
+For our first example, let's consider the following simple pipeline:
+```{mermaid}
+flowchart LR
+    get_name --> greet;
+```
+
+Villard is all about pipeline orchestration.
+It is designed to cope with frequent pipeline changes.
+All pipeline definitions and changes are made in configuration files.
+Let's create one. In your project folder, create a `config.yml` file.
+At very least, a configuration file must contain a `pipeline_definition` section, and that section must contain `_default` key.
+
+
+```yaml
+node_implementation_modules:
+    - implementation
+
+pipeline_definition:
+    _default:
+        combine_name:
+            first_name: "John"
+            last_name: "Doe"
+        greet:
+            name: "ref::combine_name"
+```
+It also accommodates multiple pipelines, so you may add more definitions other than `_default`.
+
+```{python}
+#| eval: false
+from villard import V
+
+@V.node("combine_name")
+def combine_name(first_name, last_name):
+    return first_name + " " + last_name
+
+@V.node("greet")
+def greet(name):
+    return "Hello, " + name
+```

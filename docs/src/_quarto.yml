@@ -1,0 +1,42 @@
+project:
+  type: website
+
+website:
+  title: "Villard"
+  sidebar:
+    style: docked
+    logo: logo.png
+    contents:
+      - section: Basics
+        contents:
+          - text: Installation
+            href: installation.qmd
+          - text: Getting started
+            href: quickstart.qmd
+      - section: Iris classifier project
+        contents:
+          - text: Setup
+            href: iris_setup.qmd
+          - text: Data catalog
+            href: data_catalog_basics.qmd
+          - text: Data reading and writing via catalog
+            href: data_catalog_read_write.qmd
+          - text: Experiment tracking
+            href: experiment_tracking.qmd
+      - section: Other references
+        contents:
+          - text: Referencing arbitrary objects
+            href: referencing_arbitrary.qmd
+
+  page-footer:
+    left: "Copyright 2021, Aria Ghora Prabono"
+    right:
+      - icon: github
+        href: https://github.com/ariaghora/villard
+
+format:
+  html:
+    theme: lumen
+    css: styles.css
+    toc: true
+    toc-depth: 3

@@ -1,0 +1,3 @@
+#!/bin/bash
+quarto render &&
+cp -R _site/* ../

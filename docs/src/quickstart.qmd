@@ -58,6 +58,14 @@ pipeline_definition:
 ```
 It also accommodates multiple pipelines, so you may add more definitions other than `_default`.
 
+The `combine_name` node will take the values of `first_name` and `last_name`.
+This node will output a string that is the concatenation of both names.
+The output of `combine_name` is then passed to `greet` node to be displayed.
+Note that the `name` value of `greet` node is `ref::combine_name`.
+It means that the `greet` node refers to the output of `combine_name` node (which is the concatenation names).
+
+Then we make the pipeline nodes' implementation in `implementation.py`.
+
 ```{python}
 #| eval: false
 from villard import V
@@ -68,5 +76,11 @@ def combine_name(first_name, last_name):
 
 @V.node("greet")
 def greet(name):
-    return "Hello, " + name
+    print ("Hello, " + name + "!")
+```
+
+Now execute the pipeline by invoking following command:
+
+```bash
+$ villard run config.yml
 ```

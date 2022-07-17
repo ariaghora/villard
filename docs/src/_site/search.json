@@ -7,6 +7,20 @@
     "text": "Maybe you will like this. Villard manages your data science pipelines. Split a big project into smaller discrete steps for a maintainable and reproducible workflow. Perhaps you don’t even need to your existing code too much."
   },
   {
+    "objectID": "iris_setup.html",
+    "href": "iris_setup.html",
+    "title": "Iris classifier project",
+    "section": "",
+    "text": "In this project, we will learn:"
+  },
+  {
+    "objectID": "iris_setup.html#data-catalog",
+    "href": "iris_setup.html#data-catalog",
+    "title": "Iris classifier project",
+    "section": "Data catalog",
+    "text": "Data catalog\nHard coding the data paths is not a good idea. Villard provides a data catalog to help you manage your data and to make the tracking of data easier. It defines everything related to data input and output, as well as its meta-data, inside the configuration file.\nWe will start to make use of data catalog for this example. At minimum, you need to define path and type for each entry in the data catalog. For all supported data types, you can refer to data types. Data placement follows cookiecutter recommendations.\n// We'll start using variables, one of Jsonnet's features\nlocal model_params = {\n    \"max_depth\": 5,\n    \"min_samples_leaf\": 1,\n    \"min_samples_split\": 2,\n    \"n_estimators\": 100,\n    \"random_state\": 42\n};\n\n{\n    // Data catalog section\n    \"data_catalog\": {\n        \"iris_raw\": {\n            \"path\": \"data/01_raw/iris.csv\",\n            \"type\": \"DT_PANDAS_DATAFRAME\"\n        },\n        \"trained_model\": {\n            \"path\": \"data/03_output/trained_model.pkl\",\n            \"type\": \"DT_PICKLE\"\n        }\n    },\n\n    // The modules containing data engineering and data science \n    // function implementations.\n    \"node_implementation_modules\": [\n        \"data_engineering\", \"data_science\"\n    ],\n\n    // The pipeline definitions (i.e., node interdependencies and its parameters)\n    \"pipeline_definition\": {\n        \"data_engineering\": {\n            \"split_data\": {\n                \"train_size\": 0.8,\n                \"random_state\": 42\n            },\n            \"preprocess_data\": {\n                \"path\": \"data::iris_raw\"\n            }, \n        },\n\n        \"data_science\": {\n            \"train_model\": {\n                \"data\": \"ref::preprocess_data\",\n                \"model_params\": model_params,\n            },\n            \"predict\": {\n                \"data\": \"ref::preprocess_data\",\n                \"model\": \"ref::train_model\"\n            }, \n            \"evaluate_model\": {\n                \"actual_labels\": \"ref::preprocess_data\",\n                \"predicted_labels\": \"ref::predict\"\n            }\n        },\n\n        // Jsonnet feature to concatenate two objects.\n        // In this context, the _default pipeline is the end-to-end steps \n        // from data engineering to data science.\n        \"_default\": self.data_engineering + self.data_science,\n    }\n}\n\n\n\n\n\n\nTip\n\n\n\nYou can even split the Jsonnet file into separate files and import them into the main file. For example, you can put the data_catalog entries into data_catalog.libsonnet:\n{\n    \"iris_raw\": {\n        \"path\": \"data/01_raw/iris.csv\",\n        \"type\": \"DT_PANDAS_DATAFRAME\"\n    },\n    \"trained_model\": {\n        \"path\": \"data/03_output/trained_model.pkl\",\n        \"type\": \"DT_PICKLE\"\n    }\n}\nthen import it in the main configuration file as follows:\n{\n    \"data_catalog\": import data_catalog.libsonnet,\n    ...\n}"
+  },
+  {
     "objectID": "installation.html",
     "href": "installation.html",
     "title": "Installation",

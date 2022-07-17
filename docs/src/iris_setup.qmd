@@ -1,0 +1,120 @@
+---
+title: Iris classifier project
+---
+
+In this project, we will learn:
+
+- How to use data catalog
+- How to read from and write to data catalog
+- The basic of experiment tracking
+
+# Project setup
+
+```bash
+$ villard create iris-classifier
+$ cd iris-classifier
+```
+
+# Configuration
+Villard supports YAML, JSON, and Jsonnet configuration files.
+In this example, we use Jsonnet to define the configuration due to its flexibility.
+(You might want to refer to [https://jsonnet.org](https://jsonnet.org) for more details).
+
+## Data catalog
+
+Hard coding the data paths is not a good idea.
+Villard provides a data catalog to help you manage your data and to make the tracking of data easier.
+It defines everything related to data input and output, as well as its meta-data, inside the configuration file.
+
+We will start to make use of data catalog for this example.
+At minimum, you need to define `path` and `type` for each entry in the data catalog.
+For all supported data types, you can refer to [data types](supported_data_types.qmd).
+Data placement follows [cookiecutter](https://cookiecutter.readthedocs.io/en/latest/) recommendations.
+
+```json
+// We'll start using variables, one of Jsonnet's features
+local model_params = {
+    "max_depth": 5,
+    "min_samples_leaf": 1,
+    "min_samples_split": 2,
+    "n_estimators": 100,
+    "random_state": 42
+};
+
+{
+    // Data catalog section
+    "data_catalog": {
+        "iris_raw": {
+            "path": "data/01_raw/iris.csv",
+            "type": "DT_PANDAS_DATAFRAME"
+        },
+        "trained_model": {
+            "path": "data/03_output/trained_model.pkl",
+            "type": "DT_PICKLE"
+        }
+    },
+
+    // The modules containing data engineering and data science 
+    // function implementations.
+    "node_implementation_modules": [
+        "data_engineering", "data_science"
+    ],
+
+    // The pipeline definitions (i.e., node interdependencies and its parameters)
+    "pipeline_definition": {
+        "data_engineering": {
+            "split_data": {
+                "train_size": 0.8,
+                "random_state": 42
+            },
+            "preprocess_data": {
+                "path": "data::iris_raw"
+            }, 
+        },
+
+        "data_science": {
+            "train_model": {
+                "data": "ref::preprocess_data",
+                "model_params": model_params,
+            },
+            "predict": {
+                "data": "ref::preprocess_data",
+                "model": "ref::train_model"
+            }, 
+            "evaluate_model": {
+                "actual_labels": "ref::preprocess_data",
+                "predicted_labels": "ref::predict"
+            }
+        },
+
+        // Jsonnet feature to concatenate two objects.
+        // In this context, the _default pipeline is the end-to-end steps 
+        // from data engineering to data science.
+        "_default": self.data_engineering + self.data_science,
+    }
+}
+```
+
+:::{.callout-tip}
+You can even split the Jsonnet file into separate files and import them into the main file. 
+For example, you can put the `data_catalog` entries into `data_catalog.libsonnet`:
+```json
+{
+    "iris_raw": {
+        "path": "data/01_raw/iris.csv",
+        "type": "DT_PANDAS_DATAFRAME"
+    },
+    "trained_model": {
+        "path": "data/03_output/trained_model.pkl",
+        "type": "DT_PICKLE"
+    }
+}
+```
+then import it in the main configuration file as follows:
+```json
+{
+    "data_catalog": import data_catalog.libsonnet,
+    ...
+}
+```
+:::

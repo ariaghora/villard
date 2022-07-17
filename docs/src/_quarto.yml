@@ -13,16 +13,12 @@ website:
             href: installation.qmd
           - text: Getting started
             href: quickstart.qmd
-      - section: Iris classifier project
+      - section: Next step
         contents:
-          - text: Setup
+          - text: Iris classifier project
             href: iris_setup.qmd
-          - text: Data catalog
-            href: data_catalog_basics.qmd
-          - text: Data reading and writing via catalog
-            href: data_catalog_read_write.qmd
-          - text: Experiment tracking
-            href: experiment_tracking.qmd
+          - text: More on organizing configurations
+            href: advanced_configurations.qmd
       - section: Other references
         contents:
           - text: Referencing arbitrary objects

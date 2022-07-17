@@ -25,7 +25,7 @@ website:
             href: referencing_arbitrary.qmd
 
   page-footer:
-    left: "Copyright 2021, Aria Ghora Prabono"
+    left: "Copyright © 2021, Aria Ghora Prabono | Made with [Quarto](https://quarto.org)"
     right:
       - icon: github
         href: https://github.com/ariaghora/villard

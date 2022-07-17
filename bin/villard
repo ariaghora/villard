@@ -96,7 +96,7 @@ class CMDTool:
     def explore(self, config_file):
         config = ConfigLoader(config_file).load_config()
         experiment_output_dir = config.get("experiment_output_dir")
-        explorer = Explorer(experiment_output_dir, "0.0.0.0", 8000)
+        explorer = Explorer(experiment_output_dir, "0.0.0.0", 3000)
         explorer.serve()
 
 

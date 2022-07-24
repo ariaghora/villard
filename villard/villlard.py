@@ -7,7 +7,6 @@ from typing import Any, Dict, List
 
 import _jsonnet
 import colorama
-from git import Object
 import yaml
 from tabulate import tabulate
 from termcolor import colored
@@ -391,7 +390,7 @@ class Villard:
         """
         cls.experiment_tracker.track(key, value)
 
-    def register_object(cls, key: str, value: Object) -> None:
+    def register_object(cls, key: str, value: object) -> None:
         cls.object_registry[key] = value
 
     def register_custom_data_reader(cls, data_type: str) -> None:

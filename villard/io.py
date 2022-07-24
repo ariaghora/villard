@@ -9,21 +9,21 @@ Writer classes
 ==================="""
 
 
-class DataWriter:
+class BaseDataWriter:
     def write_data(self, path: str, data: object, *args, **kwargs) -> None:
         dirname = os.path.dirname(path)
         if (not os.path.exists(dirname)) and (dirname != ""):
             os.makedirs(dirname)
 
 
-class PickleWriter(DataWriter):
+class PickleWriter(BaseDataWriter):
     def write_data(self, path: str, data: object, *args, **kwargs) -> None:
         super().write_data(path, data)
         with open(path, "wb") as f:
             pickle.dump(data, f, *args, **kwargs)
 
 
-class PandasWriter(DataWriter):
+class PandasWriter(BaseDataWriter):
     def write_data(self, path: str, data: object, *args, **kwargs) -> None:
         super().write_data(path, data)
         data.to_csv(path, *args, **kwargs)
@@ -34,22 +34,19 @@ Reader classes
 ==================="""
 
 
-class DataReader:
+class BaseDataReader:
     def read_data(self, path: str, *args, **kwargs) -> object:
-        if not os.path.exists(path):
-            msg = f"Data path `{path}` does not exist."
-            print(colored("Error:", "red"), colored(msg, "red"))
-            exit(1)
+        pass
 
 
-class PickleReader(DataReader):
+class PickleReader(BaseDataReader):
     def read_data(self, path: str, *args, **kwargs) -> object:
         super().read_data(path, *args, **kwargs)
         with open(path, "rb") as f:
             return pickle.load(f, *args, **kwargs)
 
 
-class PandasReader(DataReader):
+class PandasReader(BaseDataReader):
     def read_data(self, path: str, *args, **kwargs) -> pd.DataFrame:
         super().read_data(path, *args, **kwargs)
         return pd.read_csv(path, *args, **kwargs)

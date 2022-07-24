@@ -407,4 +407,5 @@ class Villard:
             msg = f"{reader_class.__name__} must be a subclass of villard.io.BaseDataReader."
             print(colored("Error:", "red"), colored(msg, "red"))
             exit(1)
+        cls.supported_data_types.append(data_type)
         cls.type_to_reader_map[data_type] = reader_class

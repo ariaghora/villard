@@ -394,18 +394,21 @@ class Villard:
     def register_object(cls, key: str, value: Object) -> None:
         cls.object_registry[key] = value
 
-    def register_custom_data_reader(cls, data_type: str, reader_class: type) -> None:
+    def register_custom_data_reader(cls, data_type: str) -> None:
         """
-        Register a custom data reader.
+        This decorator registers a custom data reader.
 
         Args:
             data_type: The data type in string. Please follow the convention of
                 the data type naming. For example: DT_{YOUR_CUSTOM_DATA_TYPE}.
-            reader_class: The class of the reader.
         """
-        if not issubclass(reader_class, BaseDataReader):
-            msg = f"{reader_class.__name__} must be a subclass of villard.io.BaseDataReader."
-            print(colored("Error:", "red"), colored(msg, "red"))
-            exit(1)
-        cls.supported_data_types.append(data_type)
-        cls.type_to_reader_map[data_type] = reader_class
+
+        def decorator(decorated_cls):
+            if not issubclass(decorated_cls, BaseDataReader):
+                msg = f"{decorated_cls.__name__} must be a subclass of villard.io.BaseDataReader."
+                print(colored("Error:", "red"), colored(msg, "red"))
+                exit(1)
+            cls.supported_data_types.append(data_type)
+            cls.type_to_reader_map[data_type] = decorated_cls
+
+        return decorator

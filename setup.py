@@ -5,13 +5,6 @@ from setuptools import setup
 from setuptools.command import install
 
 
-class PostInstallCommand(install.install):
-    def run(self):
-        install.install.run(self)
-        shutil.rmtree("build")
-        shutil.rmtree(glob.glob("*.egg-info")[0])
-
-
 setup(
     name="villard",
     version="0.1.1",
@@ -21,5 +14,4 @@ setup(
     license="MIT",
     packages=["villard", "villard.explorer"],
     scripts=["bin/villard"],
-    cmdclass={"install": PostInstallCommand},
 )

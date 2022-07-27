@@ -22,7 +22,7 @@ Almost always, your project is not FAANG-scaled and you just need a simple tool 
 Maybe you will like this.
 Villard manages your data science pipelines.
 Split a big project into smaller discrete steps for a maintainable and reproducible workflow.
-Perhaps you don't even need to your existing code too much.
+Perhaps you don't even need to change your existing code too much.
 
 ### What would you would expect from Villard:
 - An experiment pipeline management framework

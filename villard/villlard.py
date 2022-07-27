@@ -4,6 +4,7 @@ import os
 import sys
 from datetime import datetime
 from typing import Any, Dict, List
+from warnings import simplefilter, warn
 
 import _jsonnet
 import colorama
@@ -14,8 +15,7 @@ from termcolor import colored
 from .io import *
 from .tracker import ExperimentTracker
 
-# Following prefixes are used to identify if the value is a reference
-# to another node's output or to one of data in catalog.
+
 REFERENCE_PREFIX = "ref::"
 DATA_CATALOG_PREFIX = "data::"
 OBJECT_REGISTRY_PREFIX = "obj::"
@@ -71,8 +71,8 @@ class Villard:
 
         cls.data_catalog = dict()
         cls.object_registry = dict()
-        cls.node_func_map = dict()
-        cls.node_output_map = dict()
+        cls.step_func_map = dict()
+        cls.step_output_map = dict()
         cls.execution_nodes = dict()
         cls.execution_nodes_in_out_counter = dict()
         cls.experiment_tracker: ExperimentTracker = None
@@ -132,7 +132,7 @@ class Villard:
             if isinstance(v, str):
                 # When referencing output of another node
                 if v.startswith(REFERENCE_PREFIX):
-                    actual_kwargs[k] = cls.node_output_map[
+                    actual_kwargs[k] = cls.step_output_map[
                         v.replace(REFERENCE_PREFIX, "").strip()
                     ]
 
@@ -199,7 +199,7 @@ class Villard:
 
         for name, kwargs in cls.pipeline_definition.items():
             execution_node = {
-                "func": cls.node_func_map[name],
+                "func": cls.step_func_map[name],
                 "kwargs": kwargs,
                 "prevs": [],
                 "executed": False,
@@ -223,26 +223,31 @@ class Villard:
             cls.execution_nodes[name] = execution_node
 
     def node(cls, name: str):
-        """This decorator registers a python function as a node."""
+        simplefilter("always", DeprecationWarning)
+        warn("@node is deprecated; use @step", DeprecationWarning)
+        return cls.step(name)
 
-        def decorator_node(func):
+    def step(cls, name: str):
+        """This decorator registers a python function as a step."""
+
+        def decorator(func):
             def inner(*args, **kwargs):
                 result = func(*args, **kwargs)
-                cls.node_output_map[name] = result
+                cls.step_output_map[name] = result
                 return result
 
-            cls.node_func_map[name] = inner
+            cls.step_func_map[name] = inner
 
-        return decorator_node
+        return decorator
 
     def run(cls, config_path: str, pipeline_name: str, run_name: str) -> None:
         """
         Execute a single experiment run. Each run result will be stored in a predefined
         location.
 
-        The flow of execution is based on a directed graph. Each node is a python function.
-        Each node has a list of dependencies. The dependencies are the names of the nodes that
-        are executed before the current node. The graph is traversed in topological order.
+        The flow of execution is based on a directed graph. Each step is a python function.
+        Each step has a list of dependencies. The dependencies are the names of the steps that
+        are executed before the current step. The graph is traversed in topological order.
         The graph structure is defined based on config's `pipeline_definition`.
 
         Args:
@@ -250,7 +255,7 @@ class Villard:
 
         """
 
-        # Load configurations to initialize pipeline definitions and node implementation
+        # Load configurations to initialize pipeline definitions and step implementation
         # modules
         config = ConfigLoader(config_path).load_config()
         pipeline_definitions = config["pipeline_definition"]
@@ -262,9 +267,9 @@ class Villard:
             print(colored("Error:", "red"), colored(msg, "red"))
             exit(1)
 
-        # Initialize pipeline and node implementations
+        # Initialize pipeline and step implementations
         cls.pipeline_definition = pipeline_definitions[pipeline_name]
-        cls.node_implementation_modules = config["node_implementation_modules"]
+        cls.step_implementation_modules = config["step_implementation_modules"]
 
         # Initialize experiment tracker
         try:
@@ -277,10 +282,10 @@ class Villard:
         if "data_catalog" in config:
             cls.data_catalog = config["data_catalog"]
 
-        # import the modules containing the definition of each node.
+        # import the modules containing the definition of each step.
         # The definitions will be referred by the ones with matching key in the
         # configuration.
-        for module in cls.node_implementation_modules:
+        for module in cls.step_implementation_modules:
             try:
                 sys.path.append(os.getcwd())
                 importlib.import_module(module)
@@ -292,8 +297,8 @@ class Villard:
         # Build execution graph that determines the order of execution
         cls._build_execution_graph()
 
-        # Collect output nodes: the ones that have no outging edges.
-        # The recursion will start the from output nodes.
+        # Collect output steps: the ones that have no outging edges.
+        # The recursion will start the from output steps.
         output_nodes = {
             node: v
             for node, v in cls.execution_nodes.items()
@@ -303,7 +308,7 @@ class Villard:
         # Keep track execution statistics. This will be displayed as table in the end
         # of the execution.
         stats_table = []
-        stats_table_headers = ["Node", "Dependencies", "Execution Time"]
+        stats_table_headers = ["Step", "Dependencies", "Execution Time"]
 
         # Execute the graph in topological order.
         for output_node_name in output_nodes:

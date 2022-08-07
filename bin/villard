@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from ntpath import join
 import os
 import sys
 from argparse import ArgumentParser
@@ -17,19 +18,80 @@ The following commands are available:
 
 CONFIG_TEMPLATE = """
 
-# This is where we list the modules that contain the implementations of the nodes.
-# The modules must be importable. They can be placed in subdirectories. Remember
-# to add __init__.py files to the subdirectories.
-node_implementation_modules:
-  - nodes
+{
+    // This is where we list the modules that contain the implementations of the steps.
+    // The modules must be importable. They can be placed in subdirectories. Remember
+    // to add __init__.py files to the subdirectories.
+    step_implementation_modules: [
+        "steps",
+    ],
 
-data_catalog:
-  local_iris:
-    path: 01_raw/iris.csv
+    // This is where we define our data catalog.
+    data_catalog: {
+        employee: {
+            path: "data/01_raw/employee.csv",
+            type: "DT_PANDAS_DATAFRAME",
+        },
+        position: {
+            path: "data/01_raw/position.csv",
+            type: "DT_PANDAS_DATAFRAME",
+        },
+        merged_and_sorted: {
+            path: "data/02_intermediate/merged_and_sorted.csv",
+            type: "DT_PANDAS_DATAFRAME",
+            write_params: {
+                index: false,
+            }
+        },
+    },
 
-pipeline_definition:
-  preprocess_data:
-    data: "data::local_iris"
+    // This is where we define our pipelines.
+    pipeline_definition: {
+        _default: {
+            merge_data: {
+                df_employee: "data::employee",
+                df_position: "data::position",
+            },
+            sort_data: {
+                df_merged: "ref::merge_data",
+                by: "name",
+                ascending: true,
+            },
+        },
+    },
+}
+""".strip()
+
+STEP_TEMPLATE = """
+from villard import pipeline
+
+
+@pipeline.step("merge_data")
+def merge_data(df_employee, df_position):
+    merged = df_employee.merge(df_position, on="id")
+    return merged
+
+@pipeline.step("sort_data")
+def sort_data(df_merged, by, ascending):
+    merged_and_sorted = df_merged.sort_values(by=by, ascending=ascending)
+    pipeline.write_data("merged_and_sorted", merged_and_sorted)
+
+""".strip()
+
+CSV_EMPLOYEE_TEMPLATE = """
+id,name,age
+1,Bob,25
+2,Alice,30
+3,Dominic,40
+4,Charlie,35
+""".strip()
+
+CSV_POSITION_TEMPLATE = """
+id,position
+1,Engineer
+2,Accountant
+3,Engineer
+4,Dev-Ops
 """.strip()
 
 
@@ -83,16 +145,37 @@ class CMDTool:
         pipeline.run(config_file, pipeline_name, run_name)
 
     def create(self, project_name):
-        # create folder
+        # create project folder
         if not os.path.exists(project_name):
             os.makedirs(project_name)
         else:
             print(f"Directory with name {project_name} already exists.")
             sys.exit(1)
 
+        # create template directories
+        os.makedirs(os.path.join(project_name, "data", "01_raw"))
+        os.makedirs(os.path.join(project_name, "data", "02_intermediate"))
+        os.makedirs(os.path.join(project_name, "data", "03_output"))
+        os.makedirs(os.path.join(project_name, "data", "04_report"))
+
         # create an empty config file
-        with open(f"{project_name}/config.yaml", "w") as f:
+        with open(os.path.join(project_name, "config.jsonnet"), "w") as f:
             f.write(CONFIG_TEMPLATE)
+
+        with open(os.path.join(project_name, "steps.py"), "w") as f:
+            f.write(STEP_TEMPLATE)
+
+        with open(
+            os.path.join(project_name, "data", "01_raw", "employee.csv"), "w"
+        ) as f:
+            f.write(CSV_EMPLOYEE_TEMPLATE)
+
+        with open(
+            os.path.join(project_name, "data", "01_raw", "position.csv"), "w"
+        ) as f:
+            f.write(CSV_POSITION_TEMPLATE)
+
+        print(f"Project created: {project_name}")
 
     def explore(self, config_file):
         config = ConfigLoader(config_file).load_config()

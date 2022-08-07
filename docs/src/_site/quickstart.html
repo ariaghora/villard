@@ -220,6 +220,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   <li><a href="#basic-concepts" id="toc-basic-concepts" class="nav-link active" data-scroll-target="#basic-concepts">Basic concepts</a>
   <ul class="collapse">
   <li><a href="#step" id="toc-step" class="nav-link" data-scroll-target="#step">Step</a></li>
+  <li><a href="#pipeline" id="toc-pipeline" class="nav-link" data-scroll-target="#pipeline">Pipeline</a></li>
   <li><a href="#run" id="toc-run" class="nav-link" data-scroll-target="#run">Run</a></li>
   </ul></li>
   <li><a href="#hello-world-pipeline" id="toc-hello-world-pipeline" class="nav-link" data-scroll-target="#hello-world-pipeline">Hello world pipeline</a></li>
@@ -249,12 +250,16 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h1>Basic concepts</h1>
 <section id="step" class="level2">
 <h2 class="anchored" data-anchor-id="step">Step</h2>
-<p>Your data science experiment consists of many steps. For example, data loading step, data preprocessing step, model training step, model evaluation step, and so on. In Villard, an experiment is a collection of steps. Each step is a function that takes some parameters and returns a result. The parameters can be some user-defined data, or the result from other steps. Interconnected shapes resemble a directed graph, and we call it a <em>pipeline</em>.</p>
+<p>Your data science experiment consists of many steps. For example, data loading step, data preprocessing step, model training step, model evaluation step, and so on. In Villard, each step is a Python function that takes some parameters and returns a result. The parameters can be some user-defined data, or the result from other steps. Interconnected steps resemble a directed graph, and we call it a <em>pipeline</em>.</p>
+</section>
+<section id="pipeline" class="level2">
+<h2 class="anchored" data-anchor-id="pipeline">Pipeline</h2>
+<p>Several interconnected steps comprise a pipeline. Data science projects can have multiple pipelines, e.g., data preprocessing pipeline, model training pipeline, model inference pipeline, etc.</p>
 </section>
 <section id="run" class="level2">
 <h2 class="anchored" data-anchor-id="run">Run</h2>
 <p>A run is the execution of all the steps in pipeline, from the beginning to the end.</p>
-<p>Consider following example:</p>
+<p>Consider following pipeline example:</p>
 <div class="cell">
 <div class="cell-output-display">
 <div>
@@ -292,8 +297,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 </div>
 </div>
-<p>Villard is all about pipeline orchestration. It is designed to cope with frequent pipeline changes. All pipeline definitions and changes are made in configuration files. Let’s create one. In your project folder, create a <code>config.yml</code> file. At very least, a configuration file must contain a <code>pipeline_definition</code> section, and that section must contain <code>_default</code> key.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">node_implementation_modules</span><span class="kw">:</span></span>
+<p>Villard is all about pipeline orchestration. It is designed to cope with frequent pipeline changes. All pipeline definitions and changes are made in configuration files. Let’s create one. In your project folder, create a <code>config.yml</code> file.</p>
+<div class="callout-note callout callout-style-default callout-captioned">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-caption-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Villard supports not only YAML, but also JSON and Jsonnet.</p>
+</div>
+</div>
+<p>At very least, a configuration file must contain a <code>pipeline_definition</code> section, and that section must contain <code>_default</code> key.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">step_implementation_modules</span><span class="kw">:</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> implementation</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">pipeline_definition</span><span class="kw">:</span></span>
@@ -304,15 +323,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">greet</span><span class="kw">:</span></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">"ref::combine_name"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>It also accommodates multiple pipelines, so you may add more definitions other than <code>_default</code>.</p>
-<p>The <code>combine_name</code> node will take the values of <code>first_name</code> and <code>last_name</code>. This node will output a string that is the concatenation of both names. The output of <code>combine_name</code> is then passed to <code>greet</code> node to be displayed. Note that the <code>name</code> value of <code>greet</code> node is <code>ref::combine_name</code>. It means that the <code>greet</code> node refers to the output of <code>combine_name</code> node (which is the concatenation names).</p>
-<p>Then we make the pipeline nodes’ implementation in <code>implementation.py</code>.</p>
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> villard <span class="im">import</span> V</span>
+<p>The <code>combine_name</code> step will take the values of <code>first_name</code> and <code>last_name</code>. This step will output a string that is the concatenation of both names. The output of <code>combine_name</code> is then passed to <code>greet</code> step to be displayed. Note that the <code>name</code> value of <code>greet</code> step is <code>ref::combine_name</code>. It means that the <code>greet</code> step refers to the output of <code>combine_name</code> step (which is the concatenation names).</p>
+<p>Then we make the pipeline steps’ implementation in <code>implementation.py</code>.</p>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> villard <span class="im">import</span> pipeline</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">@V.node</span>(<span class="st">"combine_name"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">@pipeline.step</span>(<span class="st">"combine_name"</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> combine_name(first_name, last_name):</span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> first_name <span class="op">+</span> <span class="st">" "</span> <span class="op">+</span> last_name</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">@V.node</span>(<span class="st">"greet"</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">@pipeline.step</span>(<span class="st">"greet"</span>)</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> greet(name):</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span> (<span class="st">"Hello, "</span> <span class="op">+</span> name <span class="op">+</span> <span class="st">"!"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Now execute the pipeline by invoking following command:</p>

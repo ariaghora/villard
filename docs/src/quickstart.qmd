@@ -7,15 +7,18 @@ title: "Getting started"
 ## Step
 Your data science experiment consists of many steps.
 For example, data loading step, data preprocessing step, model training step, model evaluation step, and so on.
-In Villard, an experiment is a collection of steps.
-Each step is a function that takes some parameters and returns a result.
+In Villard, each step is a Python function that takes some parameters and returns a result.
 The parameters can be some user-defined data, or the result from other steps.
-Interconnected shapes resemble a directed graph, and we call it a _pipeline_.
+Interconnected steps resemble a directed graph, and we call it a _pipeline_.
+
+## Pipeline
+Several interconnected steps comprise a pipeline.
+Data science projects can have multiple pipelines, e.g., data preprocessing pipeline, model training pipeline, model inference pipeline, etc.
 
 ## Run
 A run is the execution of all the steps in pipeline, from the beginning to the end.
 
-Consider following example:
+Consider following pipeline example:
 
 ```{mermaid}
 flowchart LR
@@ -41,11 +44,15 @@ Villard is all about pipeline orchestration.
 It is designed to cope with frequent pipeline changes.
 All pipeline definitions and changes are made in configuration files.
 Let's create one. In your project folder, create a `config.yml` file.
+
+:::{.callout-note}
+Villard supports not only YAML, but also JSON and Jsonnet.
+:::
+
 At very least, a configuration file must contain a `pipeline_definition` section, and that section must contain `_default` key.
 
-
 ```yaml
-node_implementation_modules:
+step_implementation_modules:
     - implementation
 
 pipeline_definition:
@@ -58,23 +65,23 @@ pipeline_definition:
 ```
 It also accommodates multiple pipelines, so you may add more definitions other than `_default`.
 
-The `combine_name` node will take the values of `first_name` and `last_name`.
-This node will output a string that is the concatenation of both names.
-The output of `combine_name` is then passed to `greet` node to be displayed.
-Note that the `name` value of `greet` node is `ref::combine_name`.
-It means that the `greet` node refers to the output of `combine_name` node (which is the concatenation names).
+The `combine_name` step will take the values of `first_name` and `last_name`.
+This step will output a string that is the concatenation of both names.
+The output of `combine_name` is then passed to `greet` step to be displayed.
+Note that the `name` value of `greet` step is `ref::combine_name`.
+It means that the `greet` step refers to the output of `combine_name` step (which is the concatenation names).
 
-Then we make the pipeline nodes' implementation in `implementation.py`.
+Then we make the pipeline steps' implementation in `implementation.py`.
 
 ```{python}
 #| eval: false
-from villard import V
+from villard import pipeline
 
-@V.node("combine_name")
+@pipeline.step("combine_name")
 def combine_name(first_name, last_name):
     return first_name + " " + last_name
 
-@V.node("greet")
+@pipeline.step("greet")
 def greet(name):
     print ("Hello, " + name + "!")
 ```

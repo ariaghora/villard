@@ -31,68 +31,87 @@ At minimum, you need to define `path` and `type` for each entry in the data cata
 For all supported data types, you can refer to [data types](supported_data_types.qmd).
 Data placement follows [cookiecutter](https://cookiecutter.readthedocs.io/en/latest/) recommendations.
 
-```json
-// We'll start using variables, one of Jsonnet's features
-local model_params = {
-    "max_depth": 5,
-    "min_samples_leaf": 1,
-    "min_samples_split": 2,
-    "n_estimators": 100,
-    "random_state": 42
+```js
+/**
+ Step params
+ */
+local preprocess_data_params = {
+  data: 'data::local_iris',
 };
 
+local split_data_params = {
+  data: 'ref::preprocess_data',
+  train_frac: 0.8,
+};
+
+local train_model_params = {
+  data: 'ref::split_data',
+  model_class: 'obj::SVC',
+  model_params: {
+    kernel: 'rbf',
+    C: 10,
+  },
+};
+
+local make_inference_params = {
+  // by default, the model is loaded from a file
+  // defined in data catalog
+  model: 'data::trained_model',
+  feature_df: 'data::test_features',
+  stdout: false,
+};
+
+local evaluate_model_params = {
+  predicted_target_df: 'ref::make_inference',
+  actual_target_df: 'data::test_target',
+};
+
+
+/**
+ Main configuration entry point
+ */
 {
-    // Data catalog section
-    "data_catalog": {
-        "iris_raw": {
-            "path": "data/01_raw/iris.csv",
-            "type": "DT_PANDAS_DATAFRAME"
-        },
-        "trained_model": {
-            "path": "data/03_output/trained_model.pkl",
-            "type": "DT_PICKLE"
-        }
+  data_catalog: {
+    local_iris: {
+      path: 'data/01_raw/iris.csv',
+      type: 'DT_PANDAS_DATAFRAME',
+      write_params: {
+        index: false,
+      },
+    },
+    trained_model: {
+      path: 'data/03_output/model.pkl',
+      type: 'DT_PICKLE',
+      track_on_write: true,
+    },
+  },
+
+  step_implementation_modules: ['steps.data_engineering', 'steps.data_science'],
+
+  experiment_output_dir: 'experiment_output',
+
+  pipeline_definition: {
+    _default: self.data_engineering_pipeline + self.training_pipeline,
+
+    data_engineering_pipeline: {
+      preprocess_data: preprocess_data_params,
+      split_data: split_data_params,
     },
 
-    // The modules containing data engineering and data science 
-    // function implementations.
-    "node_implementation_modules": [
-        "data_engineering", "data_science"
-    ],
+    training_pipeline: {
+      train_model: train_model_params,
+      // Inference using freshly trained model instead of the loaded model.
+      make_inference: make_inference_params { model: 'ref::train_model' },
+      evaluate_model: evaluate_model_params,
+    },
 
-    // The pipeline definitions (i.e., node interdependencies and its parameters)
-    "pipeline_definition": {
-        "data_engineering": {
-            "split_data": {
-                "train_size": 0.8,
-                "random_state": 42
-            },
-            "preprocess_data": {
-                "path": "data::iris_raw"
-            }, 
-        },
-
-        "data_science": {
-            "train_model": {
-                "data": "ref::preprocess_data",
-                "model_params": model_params,
-            },
-            "predict": {
-                "data": "ref::preprocess_data",
-                "model": "ref::train_model"
-            }, 
-            "evaluate_model": {
-                "actual_labels": "ref::preprocess_data",
-                "predicted_labels": "ref::predict"
-            }
-        },
-
-        // Jsonnet feature to concatenate two objects.
-        // In this context, the _default pipeline is the end-to-end steps 
-        // from data engineering to data science.
-        "_default": self.data_engineering + self.data_science,
-    }
+    inference_pipeline: {
+      // Inference using loaded model (default action)
+      make_inference: make_inference_params { stdout: true },
+    },
+  },
 }
+
 ```
 
 :::{.callout-tip}
@@ -113,8 +132,90 @@ For example, you can put the `data_catalog` entries into `data_catalog.libsonnet
 then import it in the main configuration file as follows:
 ```json
 {
-    "data_catalog": import data_catalog.libsonnet,
+    "data_catalog": import "data_catalog.libsonnet",
     ...
 }
 ```
 :::
+
+## The data engineering code `steps/data_engineering.py`
+
+```python
+from typing import Tuple
+import pandas as pd
+from villard import pipeline
+from sklearn.model_selection import train_test_split
+
+
+@pipeline.step("preprocess_data")
+def load_data(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    df = data
+    X = df.iloc[:, :-1]
+    y = df.iloc[:, -1]
+    pipeline.track("trained_model", X)
+
+    return X, y
+
+
+@pipeline.step("split_data")
+def split_data(
+    data: Tuple[pd.DataFrame, pd.DataFrame], train_frac: float
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    X, y = data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=train_frac)
+
+    pipeline.write_data("test_features", X_test)
+    pipeline.write_data("test_target", y_test)
+    return X_train, X_test, y_train, y_test
+```
+
+## The data science code `steps/data_science.py`
+
+```python
+from typing import Any, Dict, Tuple
+
+import pandas as pd
+from sklearn.metrics import accuracy_score
+from sklearn.svm import SVC
+from villard import pipeline
+
+from sklearn import svm, tree, linear_model
+
+pipeline.register_object("SVC", svm.SVC)
+pipeline.register_object("DecisionTreeClassifier", tree.DecisionTreeClassifier)
+pipeline.register_object("LogisticRegression", linear_model.LogisticRegression)
+
+
+@pipeline.step("train_model")
+def train_model(
+    data: Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame],
+    model_class: Any,
+    model_params: Dict[str, Any],
+) -> Any:
+    X_train, _, y_train, _ = data
+    clf = model_class(**model_params).fit(X_train, y_train)
+
+    pipeline.write_data("trained_model", clf)
+    pipeline.track("trained_model", clf.__class__.__name__)
+    for k, v in model_params.items():
+        pipeline.track(k, v)
+    return clf
+
+
+@pipeline.step("make_inference")
+def make_inference(model: Any, feature_df: pd.DataFrame, stdout: bool) -> pd.DataFrame:
+    pred = model.predict(feature_df)
+    if stdout:
+        print(pred)
+    return pred
+
+
+@pipeline.step("evaluate_model")
+def evaluate_model(
+    actual_target_df: pd.DataFrame, predicted_target_df: pd.DataFrame
+) -> Any:
+    accuracy = accuracy_score(actual_target_df, predicted_target_df)
+    print("Accuracy: ", accuracy)
+    pipeline.track("test_accuracy", accuracy)
+    return accuracy
+```

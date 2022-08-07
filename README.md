@@ -28,7 +28,92 @@ Perhaps you don't even need to change your existing code too much.
 - An experiment pipeline management framework
 - An experiment tracker and explorer
 
-Read more at [https://ariaghora.github.io/villard/](https://ariaghora.github.io/villard/).
 
 ## Installation
     pip install git+https://github.com/ariaghora/villard
+
+## Quick start
+
+For starters, use the following command to create a project:
+
+```
+$ villard create example
+$ cd example
+```
+
+This will give you a directory named `example` with the following structure (and example data):
+
+```
+villard-readme
+├── config.jsonnet
+├── data
+│   ├── 01_raw
+│   │   ├── employee.csv
+│   │   └── position.csv
+│   ├── 02_intermediate
+│   ├── 03_output
+│   └── 04_report
+└── steps.py
+```
+
+The `steps.py` file contains the following code:
+
+```python
+from villard import pipeline
+
+
+@pipeline.step("merge_data")
+def merge_data(df_employee, df_position):
+    merged = df_employee.merge(df_position, on="id")
+    return merged
+
+@pipeline.step("sort_data")
+def sort_data(df_merged, by, ascending):
+    merged_and_sorted = df_merged.sort_values(by=by, ascending=ascending)
+    pipeline.write_data("merged_and_sorted", merged_and_sorted)
+```
+The steps are simply to merge two dataframes, sort them, and write them to disk.
+We can see how they are glued together by inspecting the `config.jsonnet` file:
+
+```js
+...
+    pipeline_definition: {
+        _default: {
+            merge_data: {
+                df_employee: "data::employee",
+                df_position: "data::position",
+            },
+            sort_data: {
+                df_merged: "ref::merge_data",
+                by: "name",
+                ascending: true,
+            },
+        },
+    },
+...
+```
+
+We can run the default pipeline by invoking the following command:
+```
+$ villard run config.jsonnet
+```
+You will see following output:
+```
+No pipeline name specified. Using default pipeline name: _default
+  Executing `merge_data`...
+⦿ Completed `merge_data`
+  Executing `sort_data`...
+⦿ Completed `sort_data`
+Using default experiment directory: /Users/ghora/.villard/experiments
+
+╒════════════╤════════════════╤══════════════════╕
+│ Step       │ Dependencies   │ Execution Time   │
+╞════════════╪════════════════╪══════════════════╡
+│ merge_data │ []             │ 0:00:00.003964   │
+├────────────┼────────────────┼──────────────────┤
+│ sort_data  │ ['merge_data'] │ 0:00:00.001557   │
+╘════════════╧════════════════╧══════════════════╛
+```
+and soon we will have a `data/02_intermediate/merged_and_sorted.csv` file.
+
+Please have some time to read the documentation at [https://ariaghora.github.io/villard/](https://ariaghora.github.io/villard/).

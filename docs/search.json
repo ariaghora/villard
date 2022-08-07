@@ -7,6 +7,13 @@
     "text": "Maybe you will like this. Villard manages your data science pipelines. Split a big project into smaller discrete steps for a maintainable and reproducible workflow. Perhaps you don’t even need to your existing code too much."
   },
   {
+    "objectID": "referencing_arbitrary.html",
+    "href": "referencing_arbitrary.html",
+    "title": "Referencing arbitrary objects",
+    "section": "",
+    "text": "# implementation.py\n\nfrom villard import pipeline\n\nhobbies = [\"cooking\", \"dancing\", \"hiking\"]\npipeline.register_object(\"hobbies\", hobbies)\n\n\n@pipeline.step(\"greet\")  # not necessarily need to be in the same module as `hobbies`\ndef greet(name, hobbies):\n    print(f\"Hi, I am {name}. I like {hobbies}.\")\nWe can register anything: primitive-typed data, objects, types, etc. Make sure the registering module is listed in step_implementation_modules section in the configuration.\n// config.jsonnet\n{\n  step_implementation_modules: ['implementation'],\n\n  pipeline_definition: {\n    my_pipeline: {\n      greet: {\n        name: \"John\",\n        hobbies: \"obj::hobbies\"\n      }\n    },\n  }\n}"
+  },
+  {
     "objectID": "iris_setup.html",
     "href": "iris_setup.html",
     "title": "Iris classifier project",

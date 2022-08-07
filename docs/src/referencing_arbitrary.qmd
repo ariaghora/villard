@@ -1,0 +1,38 @@
+---
+title: Referencing arbitrary objects
+---
+
+It is possible to make reference to any arbitrary Python object and pass it as a step's parameter.
+We can use `pipeline.register_object` as follows.
+
+```python
+# implementation.py
+
+from villard import pipeline
+
+hobbies = ["cooking", "dancing", "hiking"]
+pipeline.register_object("hobbies", hobbies)
+
+
+@pipeline.step("greet")  # not necessarily need to be in the same module as `hobbies`
+def greet(name, hobbies):
+    print(f"Hi, I am {name}. I like {hobbies}.")
+```
+We can register anything: primitive-typed data, objects, types, etc.
+Make sure the registering module is listed in `step_implementation_modules` section in the configuration.
+
+```js
+// config.jsonnet
+{
+  step_implementation_modules: ['implementation'],
+
+  pipeline_definition: {
+    my_pipeline: {
+      greet: {
+        name: "John",
+        hobbies: "obj::hobbies"
+      }
+    },
+  }
+}
+```

@@ -13,12 +13,10 @@ website:
             href: installation.qmd
           - text: Getting started
             href: quickstart.qmd
-      - section: Next step
+      - section: Examples
         contents:
           - text: Iris classifier project
             href: iris_setup.qmd
-          - text: More on organizing configurations
-            href: advanced_configurations.qmd
       - section: Other references
         contents:
           - text: Referencing arbitrary objects

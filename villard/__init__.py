@@ -1,3 +1,3 @@
-from .villlard import Villard, ConfigLoader
+from .villlard import Villard
 
-V = Villard()
+pipeline = Villard()

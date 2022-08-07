@@ -3,7 +3,8 @@ import os
 import sys
 from argparse import ArgumentParser
 
-from villard import V, ConfigLoader
+from villard import pipeline
+from villard.villlard import ConfigLoader
 from villard.explorer.app import Explorer
 
 USAGE = """villard <command> [<args>]
@@ -79,7 +80,7 @@ class CMDTool:
                 f"No pipeline name specified. Using default pipeline name: {pipeline_name}"
             )
 
-        V.run(config_file, pipeline_name, run_name)
+        pipeline.run(config_file, pipeline_name, run_name)
 
     def create(self, project_name):
         # create folder

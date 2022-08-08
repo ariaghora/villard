@@ -14,5 +14,9 @@ setup(
     license="MIT",
     packages=["villard", "villard.explorer"],
     scripts=["bin/villard"],
+    install_requires=[
+        "jsonnet",
+        "colorama",
+    ],
     include_package_data=True,
 )

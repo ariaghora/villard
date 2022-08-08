@@ -17,6 +17,7 @@ setup(
     install_requires=[
         "jsonnet",
         "colorama",
+        "termcolor",
     ],
     include_package_data=True,
 )

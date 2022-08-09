@@ -19,5 +19,11 @@ setup(
         "colorama",
         "termcolor",
     ],
+    package_data={
+        "villard": [
+            "explorer/*.*",
+            "explorer/templates/*.*",
+        ],
+    },
     include_package_data=True,
 )

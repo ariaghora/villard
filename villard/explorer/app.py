@@ -41,6 +41,23 @@ class Explorer:
         self.host = host
         self.port = port
 
+        @app.get("/list_experiments")
+        def list_experiments():
+            dirs = os.listdir(self.root_dir)
+            dirs = [d for d in dirs if os.path.isdir(os.path.join(self.root_dir, d))]
+            items = []
+            for _dir in dirs:
+                exp_result = joblib.load(
+                    os.path.join(self.root_dir, _dir, "experiment.pkl")
+                )
+                item = {
+                    "run_name": _dir,
+                    **exp_result,
+                }
+                items.append(item)
+            return render_template("experiment_list.html", items=items)
+            return str(items)
+
         @app.get("/")
         def _root():
             dirs = os.listdir(self.root_dir)
